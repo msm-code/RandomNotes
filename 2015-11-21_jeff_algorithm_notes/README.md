@@ -231,6 +231,7 @@ def greedy_basis(matroid, weights):
     ground_set = sorted(ground_set, key=lambda x: weight[x])
     result = set([])
     for i in range(len(ground_set)):
-        if matroid.contains(ground_set.union(set([X[i]]))):
+        if matroid.contains(ground_set.union(set([ground_set[i]]))):
             result.insert(ground_set[i])
     return result
+```
