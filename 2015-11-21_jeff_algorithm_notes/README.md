@@ -216,7 +216,8 @@ Matroid M to skończona kolekcja skończonych zbiorów spełniających trzy aksj
 
 Zbiory w M są nazywane zazwyczaj jako independent sets. Unia wszystkich zbiorów jest nazywana ground set. Independent set jest bazą jeśli nie jest podzbiorem żadnego innego independent set. Z exchange property wynika że wszystkie bazy mają taka samą licznośc. Rank podzbioru X to wielkość największego niezależnego podzbioru X.
 
-Większość terminologii wynika stąd że oryginalny przykład to był linear matroid - macierz n x m. Inne przykłady to:
+Większość terminologii wynika stąd że oryginalny przykład to był linear matroid - macierz n x m. Przykłady matroidów to:
+* linear matroid
 * uniform matroid
 * graphic/cycle matroid
 * cographic/cocycle matroid
@@ -235,3 +236,21 @@ def greedy_basis(matroid, weights):
             result.insert(ground_set[i])
     return result
 ```
+
+Greedy basis dla przykładowych matroidów to:
+* linear matroid - podzbior wektorów rozpinający column space mający największą total weight
+* uniform matroid - mając zbiór k ważonych elementów, wybrać k największych elementów
+* cycle matroid - mając graf z ważonymi krawędziami obliczenie maximum spanning tree - tzw. kruskal algorithm
+* cocycle matroid - mając graf z ważonymi krawędziami obliczenie minimum spanning tree
+* matching matroid - mając graf zdeterminowanie czy istnieje dla niego perfect matching
+* disjoint path matroid - mając skierowany graf z wyróżnionym werteksem s znajdź największy zbiór rozłącznych krawędziowo ścieżek z s
+
+Najważniejsze dla tych algorytmów okazuje sie exchange property.
+
+Dla każdego subset system S który nie jest matroidem, istnieje funkcja wagi w taka że greedy_basis nie zwraca maksymalnej wagi w S.
+
+Problem działający zachłannie - scheduling with deadlines.
+
+## 9. Randomization
+
+### Nuts and Bolts

@@ -140,3 +140,4 @@ Mutliclass classification - klasyfikacja z wieloma klasami (huh)
 Działa tak że klasyfikuje najpierw wszystko osobno dla każdej grupy (czyli dla trzech klas mamy trzy funkcje klasyfikacji binarnej)
 
 Żeby klasyfikować, uruchamiamy wszystkie klasyfikatory, i wybieramy ten który maksymalizuje hipotezę.
+
