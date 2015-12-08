@@ -17,8 +17,9 @@ dla zbioru `A \in U Pr(A) = Sum[x \in A](P(X))`
 
 ## Lesson 1.5
 Union bound:
-Pr(A | B) <= Pr(A) + Pr(B)
-Pr(A | B) = Pr(A) + Pr(B) - Pr(A & B)
+
+    Pr(A | B) <= Pr(A) + Pr(B)
+    Pr(A | B) = Pr(A) + Pr(B) - Pr(A & B)
 
 Random variable X -> funkcja X: U -> V.
 Random variable induces distribution.
@@ -88,9 +89,9 @@ Przyjmuje seed (różnej wielkości).
 Jest rozszerzany do 2048bitowego klucza, używanego jako stan wewnętrzny.
 
 Słabości:
-Pr[2nd byte = 0] = 2/256
-Pr[ (0, 0) ] = 1/256^2 + 1/256^3
-Related key attacks
+ - Pr[2nd byte = 0] = 2/256
+ - Pr[ (0, 0) ] = 1/256^2 + 1/256^3
+ - Related key attacks
 
 2. CSS
 Linear feedback shift register (LFSR) - rejestr przesuwający wartości.
@@ -117,9 +118,9 @@ I pod koniec robimy wykon = B ^ A. (xorujemy wszystko).
 Statistical test: algorytm który przyjmuje n-bitowy string, i zwraca 0 albo 1. 0 znaczy że algorytm nie wygląda na losowy, a 1 że wygląda na losowy.
 
 Statistical tests:
-1) Pr[bit = 0] ~~ Pr[bit = 1]
-2) Pr[2 bity = 00] ~~ 1/4
-3) Pr[max run of bits] <= log2(n)
+ - Pr[bit = 0] ~~ Pr[bit = 1]
+ - Pr[2 bity = 00] ~~ 1/4
+ - Pr[max run of bits] <= log2(n)
 
 Czyli nie można rozróżnić outputu od statystycznie uniform outputu.
 
@@ -131,7 +132,7 @@ jest nierozróżnialne od
 
 Advantage: G to PRG a A to test statystyczny
 i definiujemy
-ADV_{PRG}[A, G] = |Pr[A(G(K)) = 1] - PR[A(r) = 1]| - czyli różnica między wynikami prawdziwego RNG i PRG
+    ADV_{PRG}[A, G] = |Pr[A(G(K)) = 1] - PR[A(r) = 1]| - czyli różnica między wynikami prawdziwego RNG i PRG
 
 Czyli bierzemy generator PRG i test statystyczny A. I teraz jaka jest "przewaga", czyli jak bardzo różni się rozkład wyników A(PRG(x)) jeśli PRG zamienimy prawdziwym generatorem liczb losowych.
 
@@ -164,6 +165,9 @@ E jest semantic secure <=> dla wszystkich A Adv[A, E] jest negligible
 Stream cipher jest secure RNG => stream cipher E z jest semantically secure
 dla każdego semantic secure adversary A, istnieje PRG adversary B
 
+Inaczej mówiąc - nie można wyciągnąć żadnej partial informacji z wiadomości z non-negliglible probability.
+Jest to obliczeniowy odpowiednik perfect secrecy.
+
 ## Lesson 2.7 - Stream Ciphers Are Semantically Secure
 
 Twierdzenie: jeśli G jest secure PRG, to stream cipher E derived z G jest semtanically secure.
@@ -180,20 +184,20 @@ key k, robimy key expansion k1, k2, k3...
 
 i robimy coś w rodzaju
 
-m0 = plaintext
-m1 = R(k1, m0)
-m2 = R(k2, m1)
-m3 = R(k3, m2)
-...
-ciphertext = R(kn, mn)
+    m0 = plaintext
+    m1 = R(k1, m0)
+    m2 = R(k2, m1)
+    m3 = R(k3, m2)
+    ...
+    ciphertext = R(kn, mn)
 
 Pseudo Random Function (PRF) to funkcja zdefiniowana na (K, X, Y)
 
-F: K * X -> Y
+    F: K * X -> Y
 
 Pseudo Random Permutation (PRP) to funkcja:
 
-F: K * X -> X
+    F: K * X -> X
 
 P4*20RF jest secure jeśli random function w Funs[X, Y] jest indistinguishable od random function w S_F
 
@@ -203,16 +207,16 @@ Proste zastosowanie - z PRF f można zrobić PRG za pomocą f(k, 0) | f(k, 1) ..
 
 Feistel network:
 
-L1 = R0
-R1 = f(R0) ^ L0
+    L1 = R0
+    R1 = f(R0) ^ L0
 
-L2 = R1
-R2 = f(R1) ^ L1
+    L2 = R1
+    R2 = f(R1) ^ L1
 
-...
+    ...
 
-Ln = R(n-1)
-Rm = f(L(n-1)) ^ L(n-1)
+    Ln = R(n-1)
+    Rm = f(L(n-1)) ^ L(n-1)
 
 Ciekawa rzecz - dla każdych funckji f1, ... fd, feistel network jest invertible.
 
@@ -284,11 +288,13 @@ Ataki na AES:
 GGM PRF:
 Rozszerzanie PRG (PRNG) na block cipher/PRF - mamy klucz k0=k, k1, k2, k3..., i dla inputu x0, x1, x2, x3
 Robimy:
-k1 = G(k0)[x0]
-k2 = G(k2)[x1]
-k3 = G(k3)[x2]
-...
-kn = wynik
+
+    k1 = G(k0)[x0]
+    k2 = G(k2)[x1]
+    k3 = G(k3)[x2]
+    ...
+    kn = wynik
+
 Czyli PRF z PRNG
 
 ## Lesson 4.1 - PRPs and PRFs
@@ -321,11 +327,12 @@ Para (k, n) nigdy nie jest używana więcej niż raz.
 ## Lesson 4.4 - Modes of operation - many time key (CBC)
 
 (ja wiem jak działa cbc)
-c0 = e(k, iv ^ p0)
-c1 = e(k, c0 ^ p1)
-c2 = e(k, c1 ^ p2)
-...
-cn = e(k, c(n-1) ^ pn)
+
+    c0 = e(k, iv ^ p0)
+    c1 = e(k, c0 ^ p1)
+    c2 = e(k, c1 ^ p2)
+    ...
+    cn = e(k, c(n-1) ^ pn)
 
 IV w CBC musi być nieprzewidywalny, inaczej jest silny atak.
 
@@ -336,11 +343,11 @@ Prosty padding - n byte pad w postaci [n, n, n, ...] - dekryptor czyta ostatni b
 ## Lesson 4.5 - Modes of operation - many time key (CTR)
 
 
-c0 = p0 ^ e(k, iv + 0)
-c1 = p1 ^ e(k, iv + 1)
-c2 = p2 ^ e(k, iv + 2)
-...
-cn = pn ^ e(k, iv + n)
+    c0 = p0 ^ e(k, iv + 0)
+    c1 = p1 ^ e(k, iv + 1)
+    c2 = p2 ^ e(k, iv + 2)
+    ...
+    cn = pn ^ e(k, iv + n)
 
 Porównanie CTR i CBC
 
@@ -354,12 +361,13 @@ Adv_CPA[A, E_CTR] <= 2 * Adv_PRF[B, F] + 2 * q^2 *L / |X|
 
 Czyli ctr jest secure tak długo jak q^2 * L << |X|
 
-|                       | CBC               | CTR
-| uses                  | PRG               | PRF
-| parallel              | no                | yes
-| security of rand. enc | q^2 * L^2 << |X|  | q^2 * L << |X|
-| dummy padding block   | yes               | no
-| 1 byte messages       | 16x expansion     | no expansion
+|                       | CBC               | CTR               |
+|-----------------------|-------------------|-------------------|
+| uses                  | PRG               | PRF               |
+| parallel              | no                | yes               |
+| security of rand. enc | q^2 * L^2 << |X|  | q^2 * L << |X|    |
+| dummy padding block   | yes               | no                |
+| 1 byte messages       | 16x expansion     | no expansion      |
 
 ## Lesson 5.1 - Message Authentication Codes
 
@@ -411,12 +419,12 @@ Bez ostatniego kroku ta funkcja nazywa się Raw CBC, i nie jest bezpieczna krypt
 
 NMAC (nested mac)
 
-c0 = f(k, m0)
-c1 = f(c0, m1)
-c2 = f(c1, m2)
-...
-cn = f(c(n-1), mn)
-cf = f(k1, cn || fixed_padding)
+    c0 = f(k, m0)
+    c1 = f(c0, m1)
+    c2 = f(c1, m2)
+    ...
+    cn = f(c(n-1), mn)
+    cf = f(k1, cn || fixed_padding)
 
 Wynikiem NMAC jest cf.
 
@@ -437,12 +445,12 @@ Ale jeśli wiadomośc jest wielokrotnością key length, to nie paddujemy niczeg
 
 ## Lesson 5.5 - PMAC and the Carter Webman MAC
 
-c0 = f(k1, m0 ^ P(k, 0))
-c1 = f(k1, m1 ^ P(k, 1))
-c2 = f(k1, m2 ^ P(k, 2))
-...
-cn = f(k1, mn ^ P(k, n))
-cf = f(k1, c0 ^ c1 ^ c2 ^ ... ^ cn)
+    c0 = f(k1, m0 ^ P(k, 0))
+    c1 = f(k1, m1 ^ P(k, 1))
+    c2 = f(k1, m2 ^ P(k, 2))
+    ...
+    cn = f(k1, mn ^ P(k, n))
+    cf = f(k1, c0 ^ c1 ^ c2 ^ ... ^ cn)
 
 Funkcja P jest bardzo prostą funkcją (mnożenie)
 
@@ -464,10 +472,10 @@ Jest kompletnie bezpieczny przeciwko atakom.
 
 Cartem Wegman MAC - sposób na zmianę one time MAC na many time MAC:
 
-F - secure PRF
-(S, V) - secure one time MAC 
-CW((k1, k2), m) = (r, F(k1, r) % S(k2, m))
-dla losowego r <= {0, 1}^n
+    F - secure PRF
+    (S, V) - secure one time MAC 
+    CW((k1, k2), m) = (r, F(k1, r) % S(k2, m))
+    dla losowego r <= {0, 1}^n
 
 Wtedy CW jest bezpiecznym MAC (outputujący tagi w {0, 1}^{2n}
 
@@ -498,10 +506,10 @@ Jeśli mamy public read only space, to nie potrzeba klucza do weryfikacji.
 
 Merkle-Damgard iterated construction:
 
-h0 = h(m0, iv)
-h1 = h(m1, h0)
-...
-hm = h(mn, h(n-1))
+    h0 = h(m0, iv)
+    h1 = h(m1, h0)
+    ...
+    hm = h(mn, h(n-1))
 
 W ten sposób z funkcji hashującej krótkie wiadomości otrzymujemy funkcje hashującą długie wiadomości.
 
@@ -511,13 +519,16 @@ kompresując se do takiego outputu.
 
 ## Lesson 6.4 - Construction compression functions
 
-Goal: construct compression function h : T * X -> T
+Goal: construct compression function `h : T * X -> T`
 
 Zrobienie compression function z block cipher:
-Davies Meyer compression function: h(H, m) + E(m, H) ^ H
+Davies Meyer compression function:
+
+    h(H, m) + E(m, H) ^ H
 
 Są też inne konstrukcje, np. Miyaguchi-Preneel:
-h(H, m) = E(m, H) ^ H ^ m (Whirpool)
+
+    h(H, m) = E(m, H) ^ H ^ m (Whirpool)
 
 
 Ale inne warianty naturalne nie są bezpieczne.
@@ -530,7 +541,9 @@ block cipher używany to shacal-2
 Provable compression functions:
 wybierz losową 2000bitową liczbę pierwszą i losowe 1 <= u, v <= p
 
-Dla m, h <= p-1 zdefiniuj h(H, m) = u^H * v^m (mod p)
+Dla m, h <= p-1 zdefiniuj
+
+    h(H, m) = u^H * v^m (mod p)
 
 Znalezienie kolizji jest tak trudne jak rozwiązanie dyskretnego logarytmu modulo p.
 
@@ -538,7 +551,7 @@ Znalezienie kolizji jest tak trudne jak rozwiązanie dyskretnego logarytmu modul
 
 Prosta, niebezpieczna metoda na zrobienie MAC:
 
-S(k, m) = H(k || m)
+    S(k, m) = H(k || m)
 
 Niestety, jest to kompletnie insecure (a wiele osób uzywa takiej konstrukcji).
 
@@ -546,7 +559,7 @@ ALe jest standardowa metoda na konwersję hash function na MAC, i nazywa sie HMA
 
 HMAC:
 
-S(k, m) = H(k ^ opad, H(k ^ ipad || m))
+    S(k, m) = H(k ^ opad, H(k ^ ipad || m))
 
 ## Lesson 6.6 - Timing attacks on MAC verification:
 
@@ -556,3 +569,25 @@ S(k, m) = H(k ^ opad, H(k ^ ipad || m))
 Problem w tym że porównanie == jest wykonywane bajt po bajcie.
 
 Prosty timing attack.
+
+## Lesson 6.7 - Active attacks on CPA-secure encryption
+
+Confidentiality: semantic security against a CPA attack
+ - encryption secure against eavesdropping only
+
+Integrity:
+ - existential unforgeability under a chosen message attack
+ - CBC-MAC, HMAC, PMAC, CW-MAC
+
+W tym module - encryption secure against tampering.
+
+Przykładowo kiedy mamy dane:
+
+    IV, M0, M0
+
+I można je modyfikować, to attacker może zmodyfikować IV i M0 i zmodyikować pierwszy blok (bo M0 = D(C0, k) ^ IV, więc zmiana IV xoruje M0)
+
+To dowód, że CPA security nie gwarantuje bezpieczeństwa przy active attacks.
+
+Jeśli wiadomość używa integrity but not confidentiality: użyć MAC
+Jeśli wiadomość potrzebuje i integrity i confidentiality: użyć authenticated encryption.
