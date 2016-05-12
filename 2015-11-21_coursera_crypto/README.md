@@ -561,7 +561,7 @@ HMAC:
 
     S(k, m) = H(k ^ opad, H(k ^ ipad || m))
 
-## Lesson 6.6 - Timing attacks on MAC verification:
+## Lesson 7.1 - Timing attacks on MAC verification:
 
     def Verify(key, msg, sig_bytes):
         return HMACH(key, msg) == sig_bytes
@@ -591,3 +591,65 @@ To dowód, że CPA security nie gwarantuje bezpieczeństwa przy active attacks.
 
 Jeśli wiadomość używa integrity but not confidentiality: użyć MAC
 Jeśli wiadomość potrzebuje i integrity i confidentiality: użyć authenticated encryption.
+
+## Lesson 7.2 - Definitions
+
+Authenticated encryption system - to szyfr gdzie:
+
+    Jak zwykle      E: K x M x N -> C
+    ale             D: K x C x N -> M \union {_|_} 
+
+Security:
+ - semantic security under CPA attack
+ - ciphertext integrity (attacker cannot create new ciphertexts that decrypts properly)
+
+Szyfr ma ciphertext integrity, kiedy dla wszystkich adversories szanse na wygenerowanie wiadomości jest negliglible.
+
+Cipher zapewnia auhenticated encryption, kiedy jest semantically secure przy CPA, oraz zapewnia ciphertext integrity.
+
+Przykład: CBC z random IV nie zapewnia Authenticated Encryption.
+
+Ale nie zabezpiecza przed replay attacks (wysyłanie kilka razy tego samego ciphertextu).
+
+## Lesson 7.3 - Chosen ciphertext attacks
+
+Adversary power: both CPA and CCA
+ - może zaszufrować dowolny plaintext jaki chce
+ - może zdeszyfrować dowolny ciphertext poza challenge
+
+Jedyne czego wymagamy to złamania semantic security.
+
+Authenticated encryption
+- ensures confidentiality przeciwko aktywnemu adwersarzowi który potrafi zdeszyfrować niektóre wiadomości.
+
+## Lesson 7.4 - Construction from ciphers and MACs
+
+Authenticated Encryption - wprowadzaona w 2000
+
+Crypto API wcześniej:
+ - API do CPA-secure encryption
+ - API do MAC
+
+Nie wszystkie kombinacje tych komponentów dostarczają AE.
+
+Opcje na kombinacje:
+- SSL - dodanie tag na koniec MSG i E(k, m || tag)
+- IPsec - dodanie tag(ciphertext) na koniec zaszyfrowanej wiadomości
+- SSH - dodanie tag(plaintext) na koniec zaszyfrowanej wiadomości
+
+SSH - słabe, bo tag może leakować bity plaintextowej wiadomości. 
+IPsec - najlepszy sposób, niezależnie od sposobu, kombinacja zawsze jest bezpieczna.
+SSL - bezpieczne, ale są patologiczne przykłady które są vulnerable na chosen ciphertext attack.
+
+Standardy:
+- GCM: CTR mode encryption, a później CW-MAC
+- CCM: CBC-MAC, a póxniej CTF mode encryption - używane przez 802.11i (wifi)
+- EAX: CTR mode encryption a później CMAC
+
+Wszystkie wspierają AEAD (AE with associated data, czyli dodane dane tylko autentykowane). Wszystkie są nonce based.
+
+Teraz można powiedzieć dlaczego MAC Security wymaga że z (m, t) nie można wynieść (m, t'):
+
+OCB - bardziej wydajna konstrukcja, wymaga tylko jednego szyfrowania per blok.
+
+## Lesson 7.5 - Case study: TLS
