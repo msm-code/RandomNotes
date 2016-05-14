@@ -10,7 +10,7 @@
  - Northbridge komunikuje się z southbridge. Southbrudge komunikuje się z wszystkimi innymi urządzeniami.
  - Kiedyś każdy dostęp do RAMu musiał iść przez CPU, ale teraz wszystkie urządzenia wspierają DMA (direct memory access)
  - Wyraźny bottleneck to bus z northbridge do RAMu - kiedyś był tylko jeden, od DDR2 są dwa (co podwaja bandwidth). Przez to trzeba schedulować dostępy do pamięci.
- - Z poprzedniego wynika też, że kiedy wiele hyperthreadów, wątków albo procesorów próbuje sie dostać do pamięci jednocześnie, to czas czekanai jest jeszcze dłuższy
+ - Z poprzedniego wynika też, że kiedy wiele hyperthreadów, wątków albo procesorów próbuje sie dostać do pamięci jednocześnie, to czas czekania jest jeszcze dłuższy.
  
 **NUMA**
  - Northbridge może być podłączone do kilku zewnętrznych memory controllerów - pozwala to zwiększyć bandwidth i ilość dostępnej pamięci
@@ -181,3 +181,116 @@
  - W /proc/pid/numa_maps są informacje o rozkładzie pamięci procesu miedzy nodami
  
 ## 6. What Programmers Can Do
+
+**Bypassing the Cache**
+ - Kiedy dane są produkowane, i nie konsumowane od razu później, to że store ładuje całą linię cache najpierw szkodzi wydajności.
+ - Do takich celów, procesor dostarcza non-temporal write operations (non-temporal w tym przypadku oznacza "nie uzywane od razu później").
+ - Dla x86 i x86-64 jest dużo instrinsiców dostarczanych przez gcc do tego (np. mm_stream_si32, etc).
+ - Procesor potrafi robić write combining dla tych opcodów, przez co wbrew pozorom nie są wolniejsze mimo że nie używają cache. 
+ - Chyba że nie da się zrobić write combining (nieliniowy zapis), wtedy faktycznie pomijanie cache może znacznie zwolnić.
+ 
+**Optimizing Level 1 Data Cache Access**
+ - Przykład: mnożenie macierzy. Naiwna implementacja robi masę niesekwencyjnych dostępów do pamięci, co bardzo rani wydajność.
+ - Pomysł na optymalizację - można zrobić transpozycję macierzy przed mnożeniem. Samo to powoduje przyśpieszenie kodu czterokrotnie.
+ - Pomysł na optymalizację - można podzielić macierz na "podmacierze" i mnożyć osobno, dodając do pola zamiast robić to za jednym razem.
+   - Powoduje to że kod jest dość skomplikowany (6 zagnieżdżonych pętli), ale czas wykonania spada do 17.3% oryginału.
+   - Jako że procesory mają wsparcie dla wektoryzacji - użycie jej powoduje przyśpieszenie jeszcze bardziej, do 9.4% oryginału.
+
+**Optimizing Structure Layout**
+ - Narzędzie do analizowania wyglądu struktury w pamięci - pahole.
+ - Przy strukturach wypada pilnować, żeby nie przekroczyły rozmiaru słowa cache (o ile się da oczywiście).
+ - Dobry pomysł to przeniesienie critical worda na początek struktury (bo wydajność kodu z critical wordem później jest gorsza).
+ - Analogicznie, kiedy odnosi się do elementów w strukturze, i kolejność nie jest wymuszana przez logikę, najlepiej to robić w kolejności definicji.
+ - Można alokować (funkcja posix_memalign) pamięć, alignowaną do większego rozmiaru niż domyślny (domyślnie alokuje do wielkości największego typu).
+ - Dla obiektów alokowanych przez kompilator, można użyć odpowiedniego atrybutu.
+ - Różnice przy niealignowanym dostępie do pamięci są dość dramatyczne (do 400% dla małych danych, koło 30% dla dużych).
+ - Potencjalny problem przy dostępie do struktur - conflict misses, kiedy dwa fragmenty 'walczą' o te same linie w L1d 
+ 
+**Optimizing Stack Layout**
+ - Problem kiedy zmienne na stosie mają wymagania do alignu - można albo sprawdzać align przy wołaniu, albo wymagać alignowania stosu.
+ - Można wyłączyć alignowanie stosu w kompilatorze za pomocą -mpreffered-stack-boundary=2 (zmienia align do 2^n bajtów). Domyślnie jest 16 bajtów.
+ - Ale alignowanie stosu jest czasami konieczne - np. x86-64 ABI wymaga przekazywania floatów przez rejestr SSE, a one wymagają alignu do 16 bajtów.
+ 
+**Optimizing Level 1 Instruction Cache Access**
+ - Programiści zazwyczaj nie mają wpływu na layout programu (chyba że piszą w asemblerze)
+ - Instrukcje są cachowane w formie zdekodowanej (mikrokodu).
+ - Gcc ma helperowy builtin `__builtin_expect(expression, value)`.
+ - Można go używać z definem, `#define likely(x) __builtin_expect(!!(x), 1)`.
+ - Kolejna zaleta małych pętli, to fakt że intel core 2 frontend ma tzw. Loop Stream Detector. Jeśli pętla ma max 18 opcodów, wymaga max 4 fetchów,
+     ma max 4 instrukcje branchujące i jest wykonana więcej niż 64 razy, to czasami jest lockowana w instruction queue i szybciej dostępna w przyszłości.
+ - Najbardziej się opłaca alignować instrukcje które: zaczynają funkcje, zaczynają bloki dostępne tylko przez skok, na początku pętli.
+ - W gcc jest do tego -falign-functions=N, -falign-jumps=N i -falign-loops=N. Jest też -falign-labels=N, ale to overkill.
+ 
+**Optimizing Level 2 And Higher Cache Access**
+ - Odnosi się do tego wszystko to co do niższych poziomów, ale są dodatkowe aspekty.
+ - Po pierwsze, cache misse na najwyższym poziomie są bardzo drogie.
+ - Cache L2 jest zazwyczaj sharowane między wieloma corami i/lub hyperthreadami.
+ - W przeciwieństwie do L1, rozmiary cache potrafią się bardzo różnić
+ - Obecnie jedyny sposób na dowiedzenie się o rozmiarze cache jest przez /sys filesystem, konkrentie `sys/devices/system/cpu/cpu*/cache`
+ 
+**Optimizing TLB Usage**
+ - Dwa rodzaje optymalizacji - po pierwsze, zmniejszyć ilość stron których program używa (ofc). Drugie, to zmniejszyć ilość higher level directories.
+ - ASLR trochę pogarsza wydajność, przez to że zwiększa ilośc używanych higher level directories przez program (ale znaacznie zwiększa bezpieczeństwo).
+ - Co tu dużo napisać, mimo że to może mieć spory wpływ na wydajność, to programista (szczególnie HLL) nie ma wiele do gadania.
+ 
+**Prefetching**
+ - Triggerem dla CPU żeby zaczął prefetching jest zazwyczaj sekwencja dwóch lub więcej cache missów w określonym patternie.
+ - Te cache misse moga być dla sukcesywnych albo precedywnych (yyy, poprzednich) linii cache.
+ - W starych implementacjach tylko konsekutywne linie cache są rozpoznawane, w nowych również stride jest brane pod uwagę.
+ - CPU obecnie potrafi śledzić (keep track) do od 8 do 16 oddzielnych streamów dla wyższopoziomowych cache.
+ - Prefetching ma jeden duży problem (wspominany dwa razy) - nie może przekroczyć page boundaries (bo page faulty) (chyba że sie explicit to zrobi).
+ - Jeśli prefetching jest robiony przypadkowo (co trudno wykryć), ciężko coś zrobić. Można użyć ud2, co powoduje że procesor nie dekoduje dalej.
+ 
+**Software Prefetching**
+ - `_mm_prefetch(void*, _mm_hint)` - do explicit requestowania żeby fragment pamięci był prefetchowany, hint mówi w jaki sposób to zrobić.
+ - AMD implementuje prefetchw, które od razu ustawia linię cache jako 'M' - co się opłaca (tylko) jesli do tej linii będzie coś pisane.
+ - Gcc obecnie (tzn. w roku pisania tego arta, no) wspiera tylko jeden rodzaj prefetcha - -fprefetch-loop-arrays.
+ - Sprytny pomysł to używanie helper threads do software prefetchingu (dzięki czemu nie zwolni to głównego algorytmu).
+ - Szczególnie błyskotliwe jest użycie hyperthreadów do tego (dzielą najniższy poziom cache, i są dość lekkie).
+ - Jedyny problem, to to żeby hyperthread nie wybiegał za bardzo do przodu. Na linuxie do tego można np. użyć syscalla futex.
+
+**Special Kind Of Prefetch - Speculation**
+ - OOO Engine we współczesnych procesorach pozwala na przenoszenie instrukcji, jeśli nie konfliktują one ze sobą.
+ - Czasami nie jest jasne czy instrukcje konfliktują ze sobą czy nie (jeśli mamy jakieś data dependency np). IA-64 wspiera speculative load w takim przypadku.
+ - Opcody `ld8.a` i `ld8.c.clr`, pierwszy to speculative load, a drugi ma semantykę taką jak zwykły ld8, ale korzysta z tego prefetcha. 
+ 
+**Direct Cache Access**
+ - Jedno ze źródeł cache missów na współczesnych CPU to obsługa ruchu przycodzącego danych. Np. karty mogą pisać bezpośrednio do pamięci bez CPU.
+     Problem z tym jest taki, że procesor nie może wiedzieć gdzie te dane są pisane więc nie będą prefetchowane.
+ - Rozwiązanie intelowe tego problemu to DCA. Pozwala ono urządzeniu na umieszczenie danych bezpośrednio w cache.
+ 
+**Multi Threaded Optimization**
+ - Trzy ważne aspekty używania cache przy multithreadingu to concurrency, atomicity i bandwidth.
+ - Odnoszą się one również do optymalizacji przy wielu procesach, ofc, ale ponieważ procesy są niezależne, trudno pod nie optymalizować.
+ 
+**Concurrency Optimization**
+ - Kiedy wielowątkowa aplikacja używa wspólnych danych w wątkach, i wszystkie piszą do wspólnej pamięci, jest problem bo leci dużo RFO.
+ - Z tego powodu proste write może być dramatycznie kosztowne, nawet pomijająć koszt synchronizacji. Przy 4 wątkach, to już nawet 1147%.
+ - Najlepiej to rozwiązać w ten sposób, że podzielić zmienne według tego które wątki się do nich odnoszą.
+ - Jeśli zmienna jest czytana/pisana zawsze tylko przez jeden wątek, można to rozwiązać używając kwalifikatora __thread
+ - Najlepiej podzielić zmienne na readonly i read/write variables (to w sumie robi kompilator). Pogrupować używane razem zmienne w struktury.
+
+**Atomicity Optimization**
+ - Jeśli wiele wątków używa tej samej lokalizacji w pamięci, procesor nie gwarantuje żadnego konkretnego wyniku. To optymalizacja pod 99.9999% przypadków.
+ - Przykładowo, jeśli jedna lokacja w pamięci jest w stanie 'S', i dwa wątki równocześnie ją inkrementują, to pipeline nie czeka aż linia będzie w 'E'.
+ - W sytuacjach kiedy jednoczesne operacje mogą się zdarzyć, procesory dostarczają operacje atomiczne.
+ - Dużo zależy od procesora. RISCowe procesory dostarczały bardzo mało atomicznych operacji. Ale x86 i x86-64 dostarczją masę atomicznych operacji.
+ - Można je podzielić na cztery rodziny:
+   - `Bit Test` - atomowe ustawianie bitów
+   - `Load Lock/Store Conditional (LL/SC)` - LL zaczyna tranzakcje, ale SC sie uda tylko jeśli docelowa lokacja nie była zmodyfikowana w międzyczasie.
+   - `Compare and Swap (CAS)` - zapisuje pierwszy argument w drugi argument tylko jeśli obecna wartość jest ta sama co w trzecim argumencie.
+   - `Atomic Arithmetic` - atomowe podstawowe operacje arytmetyczne. Takie operacje wspierają (tylko?) x86.
+ - Architektura ma albo CAS albo LL/SC, nie oba (bo są równoważne). CAS jest popularniejsze w dzisiejszych czasach.
+ - Wszystkie inne operacje można zaimplementować za pomocą CAS, np. dodawanie v+=a: `do { c=v; n=c+a; } while(CAS(&v, c, n))`.
+ - Mimo że wyniki będą takie same, to w wydajności mogą być duze różnice. Np. CAS jest dużo (ponad 300%) wolniejsze niż exchange-add na x86.
+ - Śmieszny trick - jako że na x86 atomowe operacje mają prefix `lock`, można uniknąć kosztu atomowości (jesli niepotrzebna) robiąc skok nad prefiksem.
+
+**Bandwidth Considerations**
+ - Kiedy używane jest wiele wątków, i nie powodują one `cache contention` przez używajanie tej samej linii cache na różnych corach, też są mozliwe problemy.
+ - Procesory działają z taką częstotliwością, że nie ma szans żeby połączenie z pamięcią nadążało za wszystkimi requestami bez czekania.
+ - Jeśli doliczyć do tego że sa hyperthready, wiele rdzeni, wiele procesorów na jednym northbridge, to okazuje sie że bandwidth jest sporym problemem.
+ - Na Procesorach Core 2, event `NUS_BNR_DRV` sugeruje że bus jest przeciążony, i loady z głównej pamięci zajmują jeszcze więcej niż normalnie.
+ - Ciężko to optymalizować, bo jak pamięć jest potrzebna to znaczy że jest. Na pewno pomoże umieszczenie wątków na odpowiednich rdzeniach.
+ - Przykładowo jeśli dwa wątki czytają dane A, oraz dwa wątki czytają dane B, to na pewno pomoże jeśli wątki A będą na jednym procesorze.
+ - Analogicznie, jeśli dwa wątki korzystają z innych danych, to lepiej żeby były na różnych rdzeniach (żeby nie walczyły o cache niepotrzebnie).  
+ 
