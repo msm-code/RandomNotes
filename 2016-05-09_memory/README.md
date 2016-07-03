@@ -294,3 +294,25 @@
  - Przykładowo jeśli dwa wątki czytają dane A, oraz dwa wątki czytają dane B, to na pewno pomoże jeśli wątki A będą na jednym procesorze.
  - Analogicznie, jeśli dwa wątki korzystają z innych danych, to lepiej żeby były na różnych rdzeniach (żeby nie walczyły o cache niepotrzebnie).  
  
+**NUMA Programming**
+ - To samo co przy cache, ale pojawiają się róznice poniżej poziomu cache, bo przy NUMA jest inny koszt odnoczenia się do różnych części address space.
+ - Sporo konceptów przenosi się bezpośrednio z cache, na przykład lokalność wątków etc.
+ - Na linuxie jest libnuma, która jest wrapperem na syscalle linuxowe (i niezidentyfikowana bibilioteka będąca w developmencie przez ulricha).
+
+**Memory Policy**
+ - Pomysł za memory policy to pozwolenie istniejącym programom działanie w miarę sensownie dobrze na procesorach z NUMA.
+ - Są policy: `NUMA_BIND` - alokacja dozwolona tylko ze zbioru procesorów, `NUMA_PREFERRED` - alokacja silnie preferowana ze zbioru,
+     `NUMA_INTERLEAVE` - alokacja po równo ze wskazanych nodów, `NUMA_DEFAULT` - wartość domyślna.
+ - Swap ignoruje informacje o node kiedy pisze do swapu.
+
+**VMA Policy**
+
+**Querying Node Information**
+
+**CPU And Node Sets**
+
+**Explicit NUMA Optimizations**
+
+## 7. Memory Performance Tools
+
+## 8. Upcoming Technology
